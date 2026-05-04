@@ -6,6 +6,9 @@ export class CreateSubmissionResponse extends Response {
   name: string;
   email: string;
   message: string;
+  city?: string;
+  country?: string;
+  status: string;
   createdAt: string;
 
   constructor(
@@ -19,6 +22,9 @@ export class CreateSubmissionResponse extends Response {
     this.name = data.name;
     this.email = data.email;
     this.message = data.message;
+    this.city = data.city;
+    this.country = data.country;
+    this.status = data.status;
     this.createdAt = data.createdAt;
   }
 }

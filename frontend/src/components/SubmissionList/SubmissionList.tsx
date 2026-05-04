@@ -38,6 +38,20 @@ export const SubmissionList: React.FC = () => {
     };
   }, []);
 
+  const handleDelete = async (id: string) => {
+    try {
+      await apiService.deleteSubmission(id);
+      await fetchSubmissions();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete submission');
+    }
+  };
+
+  const handleEdit = (submission: Submission) => {
+    // Navigate to edit mode
+    window.location.hash = `#edit/${submission.id}`;
+  };
+
   if (isLoading) {
     return (
       <div className="submission-list">
@@ -74,7 +88,12 @@ export const SubmissionList: React.FC = () => {
       ) : (
         <div className="submission-items">
           {submissions.map((submission) => (
-            <SubmissionItem key={submission.id} submission={submission} />
+            <SubmissionItem 
+              key={submission.id} 
+              submission={submission} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}

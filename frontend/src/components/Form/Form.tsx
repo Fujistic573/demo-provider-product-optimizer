@@ -12,11 +12,18 @@ interface FormProps {
   onCancelEdit?: () => void;
 }
 
+interface FormData extends CreateSubmissionRequest {
+  status: Submission['status'];
+}
+
 export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onCancelEdit }) => {
-  const [formData, setFormData] = useState<CreateSubmissionRequest>({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     message: '',
+    city: '',
+    country: '',
+    status: 'Open' as const,
   });
 
   const isEditMode = !!editSubmission;
@@ -28,16 +35,23 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
         name: editSubmission.name,
         email: editSubmission.email,
         message: editSubmission.message,
+        city: editSubmission.city || '',
+        country: editSubmission.country || '',
+        status: editSubmission.status,
       });
     } else {
       setFormData({
         name: '',
         email: '',
         message: '',
+        city: '',
+        country: '',
+        status: 'Open',
       });
     }
   }, [editSubmission]);
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateSubmissionRequest, string>>>({});
+
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -46,7 +60,7 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error for this field when user starts typing
-    if (errors[name as keyof CreateSubmissionRequest]) {
+    if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
 
@@ -57,7 +71,7 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
   };
 
   const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof CreateSubmissionRequest, string>> = {};
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -94,16 +108,25 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
           name: formData.name,
           email: formData.email,
           message: formData.message,
+          city: formData.city || undefined,
+          country: formData.country || undefined,
+          status: formData.status as any,
         };
         await apiService.updateSubmission(editSubmission.id, updateRequest);
         setSubmitMessage({ type: 'success', text: 'Submission updated successfully!' });
       } else {
         // Create new submission
-        await apiService.submitForm(formData);
+        await apiService.submitForm({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          city: formData.city || undefined,
+          country: formData.country || undefined,
+        });
         setSubmitMessage({ type: 'success', text: 'Form submitted successfully!' });
       }
 
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', email: '', message: '', city: '', country: '', status: 'Open' });
 
       // Call success callback to refresh submissions list
       if (onSubmitSuccess) {
@@ -115,10 +138,20 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
         onCancelEdit();
       }
     } catch (error) {
-      setSubmitMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to submit form',
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit form';
+      
+      if (errorMessage === 'A submission with this email already exists') {
+        setErrors((prev) => ({ ...prev, email: errorMessage }));
+        setSubmitMessage({
+          type: 'error',
+          text: 'This email has already been used. Please use a different one.',
+        });
+      } else {
+        setSubmitMessage({
+          type: 'error',
+          text: errorMessage,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -158,6 +191,42 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
         error={errors.email}
         required
       />
+
+      <FormField
+        label="City"
+        name="city"
+        type="text"
+        value={formData.city || ''}
+        onChange={handleChange}
+        error={errors.city}
+      />
+
+      <FormField
+        label="Country"
+        name="country"
+        type="text"
+        value={formData.country || ''}
+        onChange={handleChange}
+        error={errors.country}
+      />
+
+      {isEditMode && (
+        <div className="form-group">
+          <label htmlFor="status" className="form-label">Status</label>
+          <select
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+            className="form-input"
+          >
+            <option value="Open">Open</option>
+            <option value="In Review">In Review</option>
+            <option value="Approved">Approved</option>
+            <option value="Declined">Declined</option>
+          </select>
+        </div>
+      )}
 
       <FormField
         label="Message"

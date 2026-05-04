@@ -66,6 +66,7 @@ export function createServer(): Express {
   console.log('  POST /api/submit (auth required)');
   console.log('  GET /api/submissions (auth required)');
   console.log('  PUT /api/submissions/:id (auth required)');
+  console.log('  DELETE /api/submissions/:id (auth required)');
   console.log('  GET /api/providers (auth required)');
   console.log('  POST /api/providers/:provider/sync (auth required)');
   console.log('  POST /api/providers/:provider/normalize (auth required)');

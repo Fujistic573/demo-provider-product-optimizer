@@ -96,6 +96,12 @@ class ApiService {
     return response.data;
   }
 
+  async deleteSubmission(id: string): Promise<void> {
+    await this.request<void>(`/submissions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Provider methods
   async getProviders(): Promise<ProviderInfo[]> {
     const response = await this.request<{ providers: ProviderInfo[] }>('/providers', {

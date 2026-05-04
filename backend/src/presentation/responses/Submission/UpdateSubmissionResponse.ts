@@ -6,6 +6,9 @@ export class UpdateSubmissionResponse extends Response {
   name: string;
   email: string;
   message: string;
+  city?: string;
+  country?: string;
+  status: string;
   createdAt: string;
 
   constructor(
@@ -18,6 +21,9 @@ export class UpdateSubmissionResponse extends Response {
     this.name = submission.name;
     this.email = submission.email;
     this.message = submission.message;
+    this.city = submission.city;
+    this.country = submission.country;
+    this.status = submission.status;
     this.createdAt = submission.createdAt;
   }
 }

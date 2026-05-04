@@ -15,7 +15,12 @@ export function createChatCompletionClient(): IChatCompletionClient {
     case 'deepinfra': {
       const apiKey = process.env.DEEP_INFRA_KEY;
       if (!apiKey?.trim()) {
-        throw new Error('DEEP_INFRA_KEY is not set. Add it to your .env file.');
+        console.warn('⚠️ DEEP_INFRA_KEY is not set. AI features will be disabled.');
+        return {
+          chat: async () => {
+            throw new Error('AI features are disabled: DEEP_INFRA_KEY is missing.');
+          }
+        };
       }
       return new DeepInfraClient({
         apiKey,
@@ -23,8 +28,11 @@ export function createChatCompletionClient(): IChatCompletionClient {
       });
     }
     default:
-      throw new Error(
-        `Unknown AI_PROVIDER: ${process.env.AI_PROVIDER}. Supported: deepinfra.`
-      );
+      console.warn(`⚠️ Unknown AI_PROVIDER: ${provider}. Using mock client.`);
+      return {
+        chat: async () => {
+          throw new Error(`AI provider ${provider} is not configured.`);
+        }
+      };
   }
 }

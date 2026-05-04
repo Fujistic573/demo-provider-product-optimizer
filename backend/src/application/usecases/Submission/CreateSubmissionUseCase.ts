@@ -7,6 +7,13 @@ export class CreateSubmissionUseCase {
   constructor(private repository: ISubmissionRepository) { }
 
   async execute(request: CreateSubmissionRequest): Promise<CreateSubmissionResponse> {
+    // Check for duplicate email
+    const normalizedEmail = request.email.trim().toLowerCase();
+    const existing = await this.repository.findByEmail(normalizedEmail);
+    if (existing) {
+      throw new Error('A submission with this email already exists');
+    }
+
     // Create entity with validation
     const submission = SubmissionEntity.create(request);
 

@@ -7,6 +7,9 @@ export class GetSubmissionsResponse extends Response {
     name: string;
     email: string;
     message: string;
+    city?: string;
+    country?: string;
+    status: string;
     createdAt: string;
   }>;
   count: number;
@@ -17,6 +20,9 @@ export class GetSubmissionsResponse extends Response {
       name: s.name,
       email: s.email,
       message: s.message,
+      city: s.city,
+      country: s.country,
+      status: s.status,
       createdAt: s.createdAt,
     }));
     super(success, mappedData, 'Submissions retrieved successfully');

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { CreateSubmissionRequest } from '../requests/Submission/CreateSubmissionRequest';
+import { UpdateSubmissionRequest } from '../requests/Submission/UpdateSubmissionRequest';
 import { CreateSubmissionResponse } from '../responses/Submission/CreateSubmissionResponse';
 import { UpdateSubmissionResponse } from '../responses/Submission/UpdateSubmissionResponse';
 import { GetSubmissionsResponse } from '../responses/Submission/GetSubmissionsResponse';
@@ -7,6 +8,7 @@ import { CreateSubmissionUseCase } from '../../application/usecases/Submission/C
 import { GetAllSubmissionsUseCase } from '../../application/usecases/Submission/GetAllSubmissionsUseCase';
 import { UpdateSubmissionUseCase } from '../../application/usecases/Submission/UpdateSubmissionUseCase';
 import { GetSubmissionByIdUseCase } from '../../application/usecases/Submission/GetSubmissionByIdUseCase';
+import { DeleteSubmissionUseCase } from '../../application/usecases/Submission/DeleteSubmissionUseCase';
 import { createSubmissionRepository } from '../../infrastructure/repositories/repositoryFactory';
 
 const router = Router();
@@ -17,6 +19,7 @@ const createSubmissionUseCase = new CreateSubmissionUseCase(repository);
 const getAllSubmissionsUseCase = new GetAllSubmissionsUseCase(repository);
 const updateSubmissionUseCase = new UpdateSubmissionUseCase(repository);
 const getSubmissionByIdUseCase = new GetSubmissionByIdUseCase(repository);
+const deleteSubmissionUseCase = new DeleteSubmissionUseCase(repository);
 
 router.post('/submit', async (req: Request, res: Response) => {
   try {
@@ -36,6 +39,14 @@ router.post('/submit', async (req: Request, res: Response) => {
     res.status(201).json(response);
   } catch (error) {
     if (error instanceof Error) {
+      // Return 409 Conflict for duplicate email
+      if (error.message === 'A submission with this email already exists') {
+        return res.status(409).json({
+          success: false,
+          error: error.message
+        });
+      }
+
       return res.status(400).json({
         success: false,
         error: error.message
@@ -90,7 +101,7 @@ router.put('/submissions/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     console.log(`PUT /api/submissions/${id} - Updating submission`);
-    const request: CreateSubmissionRequest = req.body;
+    const request: UpdateSubmissionRequest = req.body;
 
     // Validate request body
     if (!request || typeof request !== 'object') {
@@ -104,6 +115,34 @@ router.put('/submissions/:id', async (req: Request, res: Response) => {
     const response: UpdateSubmissionResponse = await updateSubmissionUseCase.execute(id, request);
 
     res.status(200).json(response);
+  } catch (error) {
+    if (error instanceof Error) {
+      const statusCode = error.message === 'Submission not found' ? 404 : 400;
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'An unexpected error occurred'
+    });
+  }
+});
+
+router.delete('/submissions/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log(`DELETE /api/submissions/${id} - Soft-deleting submission`);
+
+    await deleteSubmissionUseCase.execute(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Submission deleted successfully'
+    });
   } catch (error) {
     if (error instanceof Error) {
       const statusCode = error.message === 'Submission not found' ? 404 : 400;
